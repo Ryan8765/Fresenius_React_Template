@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import config from './config.js';
 
 
 class App extends Component {
@@ -10,11 +11,9 @@ class App extends Component {
 
 
         this.quickbase = new window.QuickBase({
-
-            realm: '',
-
-            userToken: ''
-
+            realm: config.REALM,
+            userToken: config.USER_TOKEN,
+            appToken: config.APPLICATION_TOKEN
         });
 
 
