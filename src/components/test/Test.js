@@ -36,6 +36,7 @@ class Test extends Component {
       <div>
         <h1 className="ryan-test">Testing some sass styling!!!</h1>
         <Button color="danger">Danger!</Button>
+        <img src="https://recsfmc.quickbase.com/up/bjdgs9pep/g/rc3/ei/va/89%20(2).gif" alt=""/>
       </div>
     );
   }
