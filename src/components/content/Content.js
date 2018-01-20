@@ -51,17 +51,18 @@ class Content extends Component {
                 fieldHelpText,
                 keyFieldFid,
                 uiName,
-                uiTblDbid
-            } = config.tbl_uiFields.fids;      
-        
+                uiTblDbid,
+                customText
+            } = config.tbl_uiFields.fids;                  
 
         this.quickbase.api('API_DoQuery', {
             dbid: config.tbl_uiFields.dbid,
-            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}`,
+            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}`,
             slist: fieldOrderNumber,
-            query: `{'6'.EX.'${crid}'}`
+            query: `{'6'.EX.'${crid}'}`,
+            fmt: 'structured',
         }).then((results) => {
-
+            console.log("OOOONNNNEEEEEE");
             const records = results.table.records;
             //if records exist - add array to props, else throw alert to user
             if( records.length > 0 ) {
@@ -77,7 +78,8 @@ class Content extends Component {
             }
 
         }).catch((err) => {
-            console.log('Error' + JSON.stringify(err));
+            
+            alert('Error' + JSON.stringify(err));
             // object returned if there is an error: {"code":83,"name":"Invalid error code: 83","action":"API_DoQuery"}
         });
 

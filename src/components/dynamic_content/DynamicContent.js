@@ -21,6 +21,7 @@ import './styles.css';
 import FreseniusHeader from "../header/Header.js";
 import DynamicTitle from "../dynamic_title/DynamicTitle";
 import CustomHeader from "../fields/CustomHeader/CustomHeader";
+import config from "../../config";
 
 
 class DynamicContent extends Component {
@@ -31,12 +32,27 @@ class DynamicContent extends Component {
         this.state = {
             popoverOpen: false,
             modal: false,
-            userInterfaceFieldRecords: []
+            userInterfaceFieldRecords: [],
+            updateFields: [],
+            testRecord: {
+
+                7: "Custom Text sadasfasfds",
+                8: 342,
+                9: "Checkbox",
+                12: "RBS Stuff",
+                17: 3,
+                15: "Custom Header Test",
+                16: "This is some field help text",
+                18: "Test UI",
+                19: "bid34343",
+                rid: 2
+            }
         };
 
         //bindings
         this.toggle = this.toggle.bind(this);
         this.toggleModal = this.toggleModal.bind(this);
+        this.handleChange = this.handleChange.bind(this);
     }
 
 
@@ -56,13 +72,143 @@ class DynamicContent extends Component {
         this.state.userInterfaceFieldRecords = this.props.userInterfaceFieldRecords;
     }
 
+    handleChange(event) {
+        console.log(event.target.value);
+    }
+
+
+    /**
+     * Renders help text if present for inputs in form.
+     * @param {String} fieldHelpText 
+     */
+    renderHelpText(fieldHelpText) {
+        if( fieldHelpText ) {
+            return ( 
+                <FormText>{ fieldHelpText }</FormText>
+            );
+        }
+    }
+
+    /**
+     * Handles rendering all types elements from field list from Quick Base
+     * record - one record from UI fields table from QB
+     */
+    renderInputElements( record ) {
+        //fids
+        const {
+                fieldName,
+                fieldType,
+                fieldFid,
+                fieldTbleDbid,
+                fieldLabel,
+                fieldOrderNumber,
+                fieldHelpText,
+                customText,
+                keyFieldFid,
+                uiName,
+                uiTblDbid
+            } = config.tbl_uiFields.fids;
+        //field type of record from QB
+        const recordFieldType = record[fieldType];
+        const recordFieldLabel = record[fieldLabel];
+        const recordFieldHelpText = record[fieldHelpText];
+        const recordCustomText = record[customText];
+        
+            
+        switch( recordFieldType ) {
+            case "Checkbox":
+                return(
+                    <FormGroup check>
+                        <Label check>
+                            <Input type="checkbox" onChange={this.handleChange}/>
+                            { recordFieldLabel }
+                        </Label>
+                        {this.renderHelpText(recordFieldHelpText)}
+                    </FormGroup>
+                );
+            case "Date":
+                return (
+                    <FormGroup>
+                        <Label for="exampleDate">{ recordFieldLabel }</Label>
+                        <Input 
+                            type="date" 
+                            placeholder="date placeholder" 
+                            onChange={this.handleChange} />
+                        {this.renderHelpText( recordFieldHelpText )}
+                    </FormGroup>
+                );
+            case "Choice":
+                return (
+                    <FormGroup>
+                        <Label for="exampleSelect">{recordFieldLabel}</Label>
+                        <Input type="select" onChange={this.handleChange}>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </Input>
+                        {this.renderHelpText(recordFieldHelpText)}
+                    </FormGroup>
+                );
+            case "Number":
+                return(
+                    <FormGroup>
+                        <Label for="exampleText">{recordFieldLabel}</Label>
+                        <Input type="number" step='0.01' placeholder='0.00' onChange={this.handleChange} />
+                        {this.renderHelpText(recordFieldHelpText)}
+                    </FormGroup>
+                );
+            case "Currency":
+                return(
+                    <FormGroup>
+                        <Label for="exampleText">{recordFieldLabel}</Label>
+                        <Input type="number" step='0.01' placeholder='$0.00' onChange={this.handleChange}/>
+                        {this.renderHelpText(recordFieldHelpText)}
+                    </FormGroup>
+                );
+            case "Notes":
+                return(
+                    <FormGroup>
+                        <Label for="exampleText"> {recordFieldLabel} </Label>
+                        <Input type="textarea" onChange={this.handleChange} />
+                        {this.renderHelpText(recordFieldHelpText)}
+                    </FormGroup>
+                );
+            case "Text":
+                return(
+                    <FormGroup>
+                        <Label for="exampleText"> {recordFieldLabel} </Label>
+                        <Input type="text" onChange={this.handleChange} />
+                        {this.renderHelpText(recordFieldHelpText)}
+                    </FormGroup>
+                );
+            case "Custom Text":
+                return(
+                    <p className="margin-top-sm">{recordCustomText}</p>
+                );
+            case "Custom Header":
+                return (
+                    <div className="section-title">{recordCustomText}</div>
+                );
+            default: 
+                return false;
+        }//end switch
+    
+
+    }//end renderInputElements
+
+
+
 
     render() {
+
+        
         
         return (
             <div>
                 
-                <CustomHeader header="Custom Header" />
+                {this.renderInputElements(this.state.testRecord)}
 
                 {/*dropdown*/}
                 <FormGroup>
@@ -76,12 +222,12 @@ class DynamicContent extends Component {
                     {/* popover for help text */}
 
 
-                    <Input type="select" name="select" id="exampleSelect" disabled>
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                        <option>4</option>
-                        <option>5</option>
+                    <Input type="select" name="select" id="exampleSelect" onChange={this.handleChange}>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
                     </Input>
                 </FormGroup>
 
