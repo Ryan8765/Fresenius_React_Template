@@ -11,6 +11,9 @@ function LoadingGif (props) {
 
         <div id="loading-icon">
             <img src={gif} alt="Loading Gif"/>
+            <div className="loading-icon-text">
+                Loading
+            </div>
         </div>
 
     );

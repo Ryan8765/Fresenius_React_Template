@@ -1,0 +1,11 @@
+.centered {
+  text-align: center; }
+
+.white-header {
+  font-size: 1.7rem;
+  color: white;
+  font-weight: bolder;
+  margin-bottom: 15px; }
+
+.margin-top {
+  margin-top: 20px; }
