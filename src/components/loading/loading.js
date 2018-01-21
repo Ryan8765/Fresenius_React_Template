@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
 
-import gif from "./img/loadingGif.gif";
+// import gif from "./img/loadingGif.gif";
 import "./styles.css";
 
 
@@ -10,9 +10,10 @@ function LoadingGif (props) {
     return (
 
         <div id="loading-icon">
-            <img src={gif} alt="Loading Gif"/>
+            <div className="loader">
+            </div>
             <div className="loading-icon-text">
-                Loading
+                Retrieving Data
             </div>
         </div>
 
