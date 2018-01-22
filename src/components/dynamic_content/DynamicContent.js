@@ -69,7 +69,9 @@ class DynamicContent extends Component {
     }
 
     componentWillMount() {
-        this.state.userInterfaceFieldRecords = this.props.userInterfaceFieldRecords;
+        this.setState({
+            userInterfaceFieldRecords: this.props.userInterfaceFieldRecords
+        });
     }
 
     handleChange(event) {
@@ -187,7 +189,7 @@ class DynamicContent extends Component {
                 return(
                     <p className="margin-top-sm">{recordCustomText}</p>
                 );
-            case "Custom Header":
+            case "Custom Heading":
                 return (
                     <div className="section-title">{recordCustomText}</div>
                 );
@@ -202,13 +204,15 @@ class DynamicContent extends Component {
 
 
     render() {
+        const { userInterfaceFieldRecords } = this.state; 
 
-        
+        //get all HTML elements
+        var inputElements = userInterfaceFieldRecords.map(record=>this.renderInputElements(record)); 
         
         return (
             <div>
                 
-                {this.renderInputElements(this.state.testRecord)}
+                { inputElements }
 
                 {/*dropdown*/}
                 <FormGroup>

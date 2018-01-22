@@ -8,7 +8,7 @@ import DynamicContent from "../dynamic_content/DynamicContent";
 import DynamicTitle from "../dynamic_title/DynamicTitle";
 import config from "../../config";
 import queryString from "query-string";
-import { getClistRecords, getClist } from "../../helpers/qb_helpers";
+import { getClistRecords, getClist, associateFldValuesToFldRecords } from "../../helpers/qb_helpers";
 
 
 
@@ -27,7 +27,8 @@ class Content extends Component {
         
         this.state = {
             //determines if page is loading (shows gif if so)
-            pageLoading: true
+            pageLoading: true,
+            pageTitle: "Loading"
         };
     }
 
@@ -73,13 +74,15 @@ class Content extends Component {
             var clist = getClist(8, clistRecords);
             //table you will be editing dbid
             var tblDbid = clistRecords[0][uiTblDbid];
+            //dyanmic page title
+            var title = clistRecords[0][uiName];
             //table you will be editing dbid
             var keyFid = clistRecords[0][keyFieldFid];
-
+            
             //if necessary data isn't provided - throw error modal
             if (clistRecords.length < 1 || !clist || !tblDbid || !keyFid) return Promise.reject({ "code": 404, "name": "Check URL parameters or UI Table/Fields configuration in Quick Base", "action": "API_DoQuery" });
 
-                                            
+            
 
             //get main table values ("fieldValues" variable in specs)
             this.quickbase.api('API_DoQuery', {
@@ -90,22 +93,24 @@ class Content extends Component {
             }).then((res)=>{
 
                 const fieldValues = res.table.records;
+                
 
                 if (fieldValues.length < 1) return Promise.reject({ "code": 404, "name": "No records were found.  Check the 'rid' parameter or the configuration in Quick Base (table DBID).", "action": "API_DoQuery" });
-
-                console.log(records);
-                
-                console.log(fieldValues);
                 
                 //associate field values with UI fields records (step 5 specifications)
+                var userInterfaceFieldRecords = associateFldValuesToFldRecords(fieldValues[0], records, fieldFid );
                 
+
 
                 //if records exist - add array to props, else throw alert to user
                 this.setState({
-                    userInterfaceFieldRecords: records
+                    userInterfaceFieldRecords
                 });
                 this.setState({
                     pageLoading: false
+                });
+                this.setState({
+                    pageTitle: title
                 });
                 
         
@@ -148,7 +153,7 @@ class Content extends Component {
                 <FreseniusHeader />
 
                 {/* White Title */}
-                <DynamicTitle title="Dynamic Title" />
+                <DynamicTitle title={this.state.pageTitle} />
                 
                 
                 <div className="row justify-content-center">
