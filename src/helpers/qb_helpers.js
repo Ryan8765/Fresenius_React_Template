@@ -1,17 +1,17 @@
-var records =[
+// var records =[
 
-    { 7: undefined, 8: undefined, 9: "Custom Heading", 12: undefined, 15: "MCF UI Test", 16: undefined, 17: 1816, 18: "MCF Main Test", 19: "bjajpvfwq", rid: 8 },
+//     { 7: undefined, 8: undefined, 9: "Custom Heading", 12: undefined, 15: "MCF UI Test", 16: undefined, 17: 1816, 18: "MCF Main Test", 19: "bjajpvfwq", rid: 8 },
 
-    { 7: "AE-Floor Remediation Notes", 8: 2255, 9: "Notes", 12: "Floor Remediation Notes", 15: undefined, 16: "Some help text for floor remediation.", 17: 1816, 18: "MCF Main Test", 19: "bjajpvfwq", rid: 6 },
+//     { 7: "AE-Floor Remediation Notes", 8: 2255, 9: "Notes", 12: "Floor Remediation Notes", 15: undefined, 16: "Some help text for floor remediation.", 17: 1816, 18: "MCF Main Test", 19: "bjajpvfwq", rid: 6 },
 
-    { 7: "AE-Contract Issued", 8: 1764, 9: "Date", 12: "Contract Issued", 15: undefined, 16: "This is some help text for Contract Issued field.", 17: 1816, 18: "MCF Main Test", 19: "bjajpvfwq", rid: 7 }
-];
+//     { 7: "AE-Contract Issued", 8: 1764, 9: "Date", 12: "Contract Issued", 15: undefined, 16: "This is some help text for Contract Issued field.", 17: 1816, 18: "MCF Main Test", 19: "bjajpvfwq", rid: 7 }
+// ];
 
-var fieldValues = {
+// var fieldValues = {
  
-}
+// }
 
-associateFldValuesToFldRecords(fieldValues, records, 8);
+// associateFldValuesToFldRecords(fieldValues, records, 8);
 
 
 
@@ -95,10 +95,29 @@ export function associateFldValuesToFldRecords(fieldValues, userInterfaceFieldRe
             }
         }
     }
+    return userInterfaceFieldRecords;
+}//associateFldValuesToFldRecords
 
+
+/**
+ * Takes an epoch time from QB and updates the format for HTML date input element
+ * @param {String} epocDate - returns date in format of yyyy-mm-dd
+ * @return {String} - Formatted string date yyyy-mm-dd
+ */
+export function formatToInputValueDate( epocDate ) {
     
 
-    return userInterfaceFieldRecords;
+    var d = new Date(epocDate),
+        month = '' + (d.getMonth() + 1),
+        day = d.getDate() + "",
+        year = d.getFullYear();
+
+        
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');;
 }
 
 

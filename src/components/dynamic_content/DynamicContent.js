@@ -22,6 +22,7 @@ import FreseniusHeader from "../header/Header.js";
 import DynamicTitle from "../dynamic_title/DynamicTitle";
 import CustomHeader from "../fields/CustomHeader/CustomHeader";
 import config from "../../config";
+import { formatToInputValueDate } from "../../helpers/qb_helpers";
 
 
 class DynamicContent extends Component {
@@ -92,6 +93,32 @@ class DynamicContent extends Component {
     }
 
     /**
+     * Used to render field choice value options in the dropdown. 
+     * @param {String} choiceValues - Value from UI interface fields "Field Choice Values" in QB. 
+     */
+    renderInputOptions( choiceValues ) {
+        var choiceValues = choiceValues.split(";");
+
+        if( choiceValues.length < 1 ) {
+            alert('Check Quick Base configuration to make sure options in all dropdown fields were provided.')
+            return false;
+        };
+
+        var optionElements = choiceValues.map(function(choice){
+            return <option value={choice}>{choice}</option>;
+        });
+
+        optionElements.unshift(<option value="">Select</option>);
+        console.log('hello');
+        
+        console.log(optionElements);
+        
+
+        return optionElements;
+    }//end render input options
+
+
+    /**
      * Handles rendering all types elements from field list from Quick Base
      * record - one record from UI fields table from QB
      */
@@ -103,6 +130,7 @@ class DynamicContent extends Component {
                 fieldFid,
                 fieldTbleDbid,
                 fieldLabel,
+                fieldChoiceValues,
                 fieldOrderNumber,
                 fieldHelpText,
                 customText,
@@ -115,6 +143,9 @@ class DynamicContent extends Component {
         const recordFieldLabel = record[fieldLabel];
         const recordFieldHelpText = record[fieldHelpText];
         const recordCustomText = record[customText];
+        const recordfieldChoiceValues = record[fieldChoiceValues];
+        var recordValue = record.value;
+        if (!recordValue) recordValue = ""; 
         
             
         switch( recordFieldType ) {
@@ -134,21 +165,18 @@ class DynamicContent extends Component {
                         <Label for="exampleDate">{ recordFieldLabel }</Label>
                         <Input 
                             type="date" 
-                            placeholder="date placeholder" 
-                            onChange={this.handleChange} />
+                            onChange={this.handleChange} 
+                            value={formatToInputValueDate(recordValue)}/>
                         {this.renderHelpText( recordFieldHelpText )}
                     </FormGroup>
                 );
             case "Choice":
+                
                 return (
                     <FormGroup>
                         <Label for="exampleSelect">{recordFieldLabel}</Label>
-                        <Input type="select" onChange={this.handleChange}>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
+                        <Input type="select" onChange={this.handleChange} value={recordValue}>
+                            {this.renderInputOptions(recordfieldChoiceValues )}
                         </Input>
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
@@ -181,7 +209,7 @@ class DynamicContent extends Component {
                 return(
                     <FormGroup>
                         <Label for="exampleText"> {recordFieldLabel} </Label>
-                        <Input type="text" onChange={this.handleChange} />
+                        <Input type="text" onChange={this.handleChange} value={recordValue} />
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
                 );

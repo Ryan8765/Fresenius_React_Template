@@ -52,20 +52,40 @@ class Content extends Component {
                 fieldOrderNumber,
                 fieldHelpText,
                 keyFieldFid,
+                fieldChoiceValues,
                 uiName,
                 uiTblDbid,
                 customText
-            } = config.tbl_uiFields.fids;                  
+            } = config.tbl_uiFields.fids;
+            
+        
+        //testing genresults table
+        // this.quickbase.api('API_GenResultsTable', {
+        //     dbid: config.tbl_uiFields.dbid,                       
+        //     query: `{'6'.EX.'${crid}'}`,
+        //     clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}`,
+        //     slist: fieldOrderNumber,
+        //     jsa: 1,
+        //     fmt: 'structured'
+        // }).then((results) => {
+        //     console.log("TESTTTT");
+            
+        //     console.log(results);
+            
+        // }).catch((error) => {
+        //     // Handle error
+        // });
         
         //get user interfaceFieldRecords (refer to specs)
         this.quickbase.api('API_DoQuery', {
             dbid: config.tbl_uiFields.dbid,
-            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}`,
+            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}.${fieldChoiceValues}`,
             slist: fieldOrderNumber,
             query: `{'6'.EX.'${crid}'}`,
             fmt: 'structured',
         }).then((results) => {
             const records = results.table.records;
+            
 
             if (records.length < 1) return Promise.reject({ "code": 404, "name": "Check UI Fields configuration DBID bnda9x7py", "action": "API_DoQuery" });
 
@@ -82,7 +102,6 @@ class Content extends Component {
             //if necessary data isn't provided - throw error modal
             if (clistRecords.length < 1 || !clist || !tblDbid || !keyFid) return Promise.reject({ "code": 404, "name": "Check URL parameters or UI Table/Fields configuration in Quick Base", "action": "API_DoQuery" });
 
-            
 
             //get main table values ("fieldValues" variable in specs)
             this.quickbase.api('API_DoQuery', {
@@ -91,8 +110,9 @@ class Content extends Component {
                 query: `{'${keyFid}'.EX.'${rid}'}`,
                 fmt: 'structured'
             }).then((res)=>{
-
+                
                 const fieldValues = res.table.records;
+                
                 
 
                 if (fieldValues.length < 1) return Promise.reject({ "code": 404, "name": "No records were found.  Check the 'rid' parameter or the configuration in Quick Base (table DBID).", "action": "API_DoQuery" });
