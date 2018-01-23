@@ -108,9 +108,9 @@ export function formatToInputValueDate( epocDate ) {
     
 
     var d = new Date(epocDate),
-        month = '' + (d.getMonth() + 1),
-        day = d.getDate() + "",
-        year = d.getFullYear();
+        month = '' + (d.getUTCMonth() + 1),
+        day = d.getUTCDate() + "",
+        year = d.getUTCFullYear();
 
         
 
