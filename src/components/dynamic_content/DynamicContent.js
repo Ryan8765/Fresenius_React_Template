@@ -11,7 +11,10 @@ import {
     Modal,
     ModalHeader,
     ModalBody,
-    ModalFooter
+    ModalFooter,
+    InputGroup, 
+    InputGroupAddon,
+    InputGroupText
 } from 'reactstrap';
 
 
@@ -28,7 +31,14 @@ import { formatToInputValueDate } from "../../helpers/qb_helpers";
 class DynamicContent extends Component {
 
     constructor(props) {
-        super(props);       
+        super(props);   
+        
+        //initialize QuickBase
+        this.quickbase = new window.QuickBase({
+            realm: config.REALM,
+            userToken: config.USER_TOKEN,
+            appToken: config.APPLICATION_TOKEN
+        });
 
         this.state = {
             popoverOpen: false,
@@ -54,6 +64,7 @@ class DynamicContent extends Component {
         this.toggle = this.toggle.bind(this);
         this.toggleModal = this.toggleModal.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.handleSave = this.handleSave.bind(this);
     }
 
 
@@ -70,13 +81,111 @@ class DynamicContent extends Component {
     }
 
     componentWillMount() {
+        var records = this.props.userInterfaceFieldRecords;
+        const { fieldType } = config.tbl_uiFields.fids;
+
+        //convert epoch dates from QB to appropriate format for html in appropriate fields
+        records = records.map((record)=>{
+            if( record[fieldType] === "Date" ) {
+                if( !record.value ) return record;
+                record.value = formatToInputValueDate(record.value);
+                return record;
+            } else {
+                return record;
+            }
+        });
+
+        //initialize state
         this.setState({
-            userInterfaceFieldRecords: this.props.userInterfaceFieldRecords
+            userInterfaceFieldRecords: records
         });
     }
 
-    handleChange(event) {
-        console.log(event.target.value);
+
+    /**
+     * 
+     * @param {Array} userInterfaceFieldRecords - array of field objects
+     */
+    handleSave() {
+        var {userInterfaceFieldRecords} = this.state;
+        
+        const { fieldFid, uiTblDbid } = config.tbl_uiFields.fids;
+        var dbid = userInterfaceFieldRecords[0][uiTblDbid];
+        
+        
+        
+        
+        var updatedFieldObject = null;
+        var updatedFields = [];
+
+        //filter to just updated fields
+        updatedFields = userInterfaceFieldRecords.filter((field)=>{
+            if( field.wasUpdated ) {
+                return true;
+            }
+        });        
+
+        //return array appropriate for api edit record
+        var fieldValues = updatedFields.map((field)=>{
+            updatedFieldObject = {
+                fid: field[fieldFid],
+                value: field.value
+            };
+            return updatedFieldObject;
+        });
+
+        //if there are fields to update
+        if( fieldValues.length > 0 ) {
+
+            console.log(dbid);
+            console.log(parseInt(this.props.rid));
+
+            
+                
+
+            this.quickbase.api('API_EditRecord', {
+                dbid,             
+                key: parseInt(this.props.rid),                         
+                fields: fieldValues,
+                msInUTC: true
+            }).then((results) => {
+                console.log(results);
+                
+            }).catch((error) => {
+                console.log(error);
+                alert(error);
+            });
+        }        
+        
+    }
+
+
+    /**
+     * This handles any change in input elements.  It updates the fields value to the value typed into the input element.
+     * @param {Object} e - input change event 
+     * @param {Interger} fieldFid - the fid of the field in question that is being changed
+     */
+    handleChange(e, fieldFidInput) {
+        console.log('hello');
+        
+        const { fieldFid } = config.tbl_uiFields.fids;
+        const target = e.target;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+
+        var updatedUserInterfaceFieldRecords =  this.state.userInterfaceFieldRecords.map((record)=>{
+            //make sure the correct field ID is being referenced - if so, update that value.
+            if (record[fieldFid] == fieldFidInput ) {
+                record.value = value;
+                record.wasUpdated = true;
+                return record;
+            } else {
+                return record;
+            }
+        });    
+        
+        this.setState({
+            userInterfaceFieldRecords: updatedUserInterfaceFieldRecords
+        });
     }
 
 
@@ -104,14 +213,11 @@ class DynamicContent extends Component {
             return false;
         };
 
-        var optionElements = choiceValues.map(function(choice){
-            return <option value={choice}>{choice}</option>;
+        var optionElements = choiceValues.map(function(choice, i){
+            return <option key={i} value={choice}>{choice}</option>;
         });
 
-        optionElements.unshift(<option value="">Select</option>);
-        console.log('hello');
-        
-        console.log(optionElements);
+        optionElements.unshift(<option key="1000000" value="">Select</option>);
         
 
         return optionElements;
@@ -144,6 +250,8 @@ class DynamicContent extends Component {
         const recordFieldHelpText = record[fieldHelpText];
         const recordCustomText = record[customText];
         const recordfieldChoiceValues = record[fieldChoiceValues];
+        const recordFieldFid = record[fieldFid];
+        
         var recordValue = record.value;
         if (!recordValue) recordValue = ""; 
         
@@ -151,7 +259,7 @@ class DynamicContent extends Component {
         switch( recordFieldType ) {
             case "Checkbox":
                 return(
-                    <FormGroup check>
+                    <FormGroup key={recordFieldFid} check>
                         <Label check>
                             <Input type="checkbox" onChange={this.handleChange}/>
                             { recordFieldLabel }
@@ -161,21 +269,23 @@ class DynamicContent extends Component {
                 );
             case "Date":
                 return (
-                    <FormGroup>
+                    <FormGroup key={recordFieldFid}>
                         <Label for="exampleDate">{ recordFieldLabel }</Label>
                         <Input 
                             type="date" 
-                            onChange={this.handleChange} 
-                            value={formatToInputValueDate(recordValue)}/>
+                            onChange={(e) => this.handleChange(e, recordFieldFid)} 
+                            value={recordValue}/>
                         {this.renderHelpText( recordFieldHelpText )}
                     </FormGroup>
                 );
             case "Choice":
                 
                 return (
-                    <FormGroup>
+                    <FormGroup key={recordFieldFid}>
                         <Label for="exampleSelect">{recordFieldLabel}</Label>
-                        <Input type="select" onChange={this.handleChange} value={recordValue}>
+                        <Input type="select" 
+                            onChange={(e) => this.handleChange(e, recordFieldFid)} 
+                            value={recordValue}>
                             {this.renderInputOptions(recordfieldChoiceValues )}
                         </Input>
                         {this.renderHelpText(recordFieldHelpText)}
@@ -183,46 +293,72 @@ class DynamicContent extends Component {
                 );
             case "Number":
                 return(
-                    <FormGroup>
+                    <FormGroup key={recordFieldFid}>
                         <Label for="exampleText">{recordFieldLabel}</Label>
-                        <Input type="number" step='0.01' placeholder='0.00' onChange={this.handleChange} />
+                        <Input 
+                            type="number" 
+                            step='0.01' 
+                            placeholder='0.00' 
+                            onChange={(e) => this.handleChange(e, recordFieldFid)} 
+                            value={recordValue}/>
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
                 );
             case "Currency":
+                //convert to decimals
+                recordValue = recordValue.toFixed(2);
                 return(
-                    <FormGroup>
-                        <Label for="exampleText">{recordFieldLabel}</Label>
-                        <Input type="number" step='0.01' placeholder='$0.00' onChange={this.handleChange}/>
-                        {this.renderHelpText(recordFieldHelpText)}
-                    </FormGroup>
+                    <div key={recordFieldFid}>
+                        <div className="form-group">
+                            <Label>{recordFieldLabel}</Label>
+                            <div className="input-group">
+                                <div className="input-group-prepend">
+                                    <span className="input-group-text" id="basic-addon1">$</span>
+                                </div>
+                                <Input 
+                                    type="number" 
+                                    id="exampleText" 
+                                    step='0.01' 
+                                    placeholder='$0.00' 
+                                    value={recordValue}
+                                    onChange={(e) => this.handleChange(e, recordFieldFid)}/>
+                            </div>
+                            {this.renderHelpText(recordFieldHelpText)}
+                        </div>
+                    </div>
                 );
             case "Notes":
                 return(
-                    <FormGroup>
+                    <FormGroup key={recordFieldFid}>
                         <Label for="exampleText"> {recordFieldLabel} </Label>
-                        <Input type="textarea" onChange={this.handleChange} />
+                        <Input 
+                            type="textarea" 
+                            onChange={(e) => this.handleChange(e, recordFieldFid)} 
+                            value={recordValue}/>
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
                 );
             case "Text":
                 return(
-                    <FormGroup>
+                    <FormGroup key={recordFieldFid}>
                         <Label for="exampleText"> {recordFieldLabel} </Label>
-                        <Input type="text" onChange={this.handleChange} value={recordValue} />
+                        <Input 
+                            type="text" 
+                            onChange={(e) => this.handleChange(e, recordFieldFid)} 
+                            value={recordValue} />
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
                 );
             case "Custom Text":
                 return(
-                    <p className="margin-top-sm">{recordCustomText}</p>
+                    <p className="margin-top-sm" key={recordFieldFid}>{recordCustomText}</p>
                 );
             case "Custom Heading":
                 return (
-                    <div className="section-title">{recordCustomText}</div>
+                    <div className="section-title" key={recordFieldFid}>{recordCustomText}</div>
                 );
             default: 
-                return false;
+                break;
         }//end switch
     
 
@@ -281,11 +417,27 @@ class DynamicContent extends Component {
                     <Input type="number" id="exampleText" step='0.01' placeholder='0.00' />
                 </FormGroup>
 
+                <div>
+                    <div className="form-group">
+                        <Label>Currency ($)</Label>
+                        <div className="input-group">
+                            <div className="input-group-prepend">
+                                <span className="input-group-text" id="basic-addon1">$</span>
+                            </div>
+                            <input className="form-control" type="number" step='0.01' placeholder='0.00' />
+                        </div>
+                    </div>
+                </div>
+
                 <FormGroup>
                     <Label for="exampleText">Currency ($)</Label>
                     <Input type="number" id="exampleText" step='0.01' placeholder='$0.00' />
+                    
                     <FormText>Example help text that remains unchanged.</FormText>
                 </FormGroup>
+
+                
+                    
 
                 <FormGroup check>
                     <Label check>
@@ -316,7 +468,7 @@ class DynamicContent extends Component {
                 <div className="row justify-content-center">
                     <div className="col-md-10">
                         <div className="margin-top">
-                            <Button color="success" block>Save Updates</Button>
+                            <Button color="success" block onClick={this.handleSave}>Save Updates</Button>
                         </div>
                     </div>
                 </div>

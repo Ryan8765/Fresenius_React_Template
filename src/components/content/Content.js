@@ -42,6 +42,7 @@ class Content extends Component {
         //get Query Parameters
         const getQueryString = queryString.parse(window.location.search);
         const { crid, rid } = getQueryString; 
+        
         //fids
         const {
                 fieldName,
@@ -59,7 +60,7 @@ class Content extends Component {
             } = config.tbl_uiFields.fids;
             
         
-        //testing genresults table
+        // testing genresults table
         // this.quickbase.api('API_GenResultsTable', {
         //     dbid: config.tbl_uiFields.dbid,                       
         //     query: `{'6'.EX.'${crid}'}`,
@@ -119,6 +120,8 @@ class Content extends Component {
                 
                 //associate field values with UI fields records (step 5 specifications)
                 var userInterfaceFieldRecords = associateFldValuesToFldRecords(fieldValues[0], records, fieldFid );
+
+                
                 
 
 
@@ -139,6 +142,7 @@ class Content extends Component {
             });
 
         }).catch((err) => {
+            console.log(err);
             
             alert('Error22222' + JSON.stringify(err));
             // object returned if there is an error: {"code":83,"name":"Invalid error code: 83","action":"API_DoQuery"}
@@ -153,6 +157,9 @@ class Content extends Component {
      */
     pageLoadingRender() {
         const { userInterfaceFieldRecords } = this.state;
+        //get Query Parameters
+        const getQueryString = queryString.parse(window.location.search);
+        const { rid } = getQueryString; 
         
         if( this.state.pageLoading ) {
             return (
@@ -160,7 +167,9 @@ class Content extends Component {
             );
         } else {
             return (
-                <DynamicContent userInterfaceFieldRecords={ userInterfaceFieldRecords } />
+                <DynamicContent 
+                    userInterfaceFieldRecords={ userInterfaceFieldRecords } 
+                    rid={rid}/>
             );
         }
     }
