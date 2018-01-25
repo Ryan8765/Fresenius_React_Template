@@ -45,6 +45,8 @@ class DynamicContent extends Component {
             modal: false,
             userInterfaceFieldRecords: [],
             updateFields: [],
+            isSaving: false,
+            userUpdatedRecord: false,
             testRecord: {
 
                 7: "Custom Text sadasfasfds",
@@ -137,11 +139,13 @@ class DynamicContent extends Component {
         //if there are fields to update
         if( fieldValues.length > 0 ) {
 
-            console.log(dbid);
-            console.log(parseInt(this.props.rid));
+           
 
-            
-                
+            //hide save button
+            this.setState({
+                isSaving: true
+            });
+
 
             this.quickbase.api('API_EditRecord', {
                 dbid,             
@@ -150,6 +154,27 @@ class DynamicContent extends Component {
                 msInUTC: true
             }).then((results) => {
                 console.log(results);
+
+                //reset all "wasUpdated" values in state to disable save button
+                var resetRecords = userInterfaceFieldRecords.map((record)=>{
+                    record.wasUpdated = false;
+                    return record;
+                });
+
+                this.setState({
+                    userInterfaceFieldRecords: resetRecords
+                });
+
+                this.setState({
+                    userUpdatedRecord: false
+                });
+
+                this.setState({
+                    isSaving: false
+                });
+
+                //show modal save
+                this.toggleModal();
                 
             }).catch((error) => {
                 console.log(error);
@@ -161,19 +186,38 @@ class DynamicContent extends Component {
 
 
     /**
+     * Handles making fields read only.
+     * @param {String} isReadOnly - value returned from field "Is read Only" in UI fields table QB.
+     */
+    readOnly( isReadOnly ) {
+        if( isReadOnly ) return "disabled";
+    }
+
+
+    /**
+     * Handles making the save button clickable (user must update a field first)
+     * @param {Boolean} userUpdatedRecord - true/false
+     */
+    enableDisabledSave( userUpdatedRecord ) {
+        if( !userUpdatedRecord ) return true;
+    }
+
+
+    /**
      * This handles any change in input elements.  It updates the fields value to the value typed into the input element.
      * @param {Object} e - input change event 
      * @param {Interger} fieldFid - the fid of the field in question that is being changed
      */
     handleChange(e, fieldFidInput) {
-        console.log('hello');
         
         const { fieldFid } = config.tbl_uiFields.fids;
         const target = e.target;
         const value = target.type === 'checkbox' ? target.checked : target.value;
+        
 
         var updatedUserInterfaceFieldRecords =  this.state.userInterfaceFieldRecords.map((record)=>{
             //make sure the correct field ID is being referenced - if so, update that value.
+            
             if (record[fieldFid] == fieldFidInput ) {
                 record.value = value;
                 record.wasUpdated = true;
@@ -186,6 +230,21 @@ class DynamicContent extends Component {
         this.setState({
             userInterfaceFieldRecords: updatedUserInterfaceFieldRecords
         });
+
+        //handles enabling save button once user has changed something
+        this.setState({
+            userUpdatedRecord: true
+        });
+    }
+
+    /**
+     * Handles checking/unchecking checkbox
+     * @param {Boolean} value - value of the checkbox field (1 or 0 or true or false)
+     */
+    isChecked( value ) {
+        if( value == 1 || value == true ) {
+            return "checked";
+        }
     }
 
 
@@ -224,6 +283,41 @@ class DynamicContent extends Component {
     }//end render input options
 
 
+    renderSaveOrLoading( isSaving ) {
+        const { userUpdatedRecord } = this.state;
+
+        if( isSaving ) {
+            return (
+                <div className="row justify-content-center">
+                    <div className="col-md-10">
+                        <div className="margin-top">
+                            <div id="save-loading-icon">
+                                <div className="save-loader">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        } else {
+            return(
+                <div className="row justify-content-center">
+                    <div className="col-md-10">
+                        <div className="margin-top">
+                            <Button 
+                                color="success" 
+                                block 
+                                onClick={this.handleSave} 
+                                disabled={this.enableDisabledSave(userUpdatedRecord)}>Save Updates</Button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+    }
+
+
     /**
      * Handles rendering all types elements from field list from Quick Base
      * record - one record from UI fields table from QB
@@ -242,7 +336,8 @@ class DynamicContent extends Component {
                 customText,
                 keyFieldFid,
                 uiName,
-                uiTblDbid
+                uiTblDbid,
+                readOnlyField
             } = config.tbl_uiFields.fids;
         //field type of record from QB
         const recordFieldType = record[fieldType];
@@ -251,6 +346,7 @@ class DynamicContent extends Component {
         const recordCustomText = record[customText];
         const recordfieldChoiceValues = record[fieldChoiceValues];
         const recordFieldFid = record[fieldFid];
+        const recordReadOnly = record[readOnlyField];
         
         var recordValue = record.value;
         if (!recordValue) recordValue = ""; 
@@ -261,7 +357,11 @@ class DynamicContent extends Component {
                 return(
                     <FormGroup key={recordFieldFid} check>
                         <Label check>
-                            <Input type="checkbox" onChange={this.handleChange}/>
+                            <Input 
+                            type="checkbox" 
+                            checked={this.isChecked( recordValue )}
+                            onChange={(e) => this.handleChange(e, recordFieldFid)} 
+                            disabled={this.readOnly(recordReadOnly)}/>
                             { recordFieldLabel }
                         </Label>
                         {this.renderHelpText(recordFieldHelpText)}
@@ -274,7 +374,8 @@ class DynamicContent extends Component {
                         <Input 
                             type="date" 
                             onChange={(e) => this.handleChange(e, recordFieldFid)} 
-                            value={recordValue}/>
+                            value={recordValue}
+                            disabled={this.readOnly(recordReadOnly)}/>
                         {this.renderHelpText( recordFieldHelpText )}
                     </FormGroup>
                 );
@@ -285,7 +386,7 @@ class DynamicContent extends Component {
                         <Label for="exampleSelect">{recordFieldLabel}</Label>
                         <Input type="select" 
                             onChange={(e) => this.handleChange(e, recordFieldFid)} 
-                            value={recordValue}>
+                            value={recordValue} disabled={this.readOnly(recordReadOnly)}>
                             {this.renderInputOptions(recordfieldChoiceValues )}
                         </Input>
                         {this.renderHelpText(recordFieldHelpText)}
@@ -300,13 +401,17 @@ class DynamicContent extends Component {
                             step='0.01' 
                             placeholder='0.00' 
                             onChange={(e) => this.handleChange(e, recordFieldFid)} 
-                            value={recordValue}/>
+                            value={recordValue}
+                            disabled={this.readOnly(recordReadOnly)}/>
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
                 );
             case "Currency":
+                
                 //convert to decimals
-                recordValue = recordValue.toFixed(2);
+                if( typeof recordValue !== "string" ) {
+                    recordValue = recordValue.toFixed(2);
+                }
                 return(
                     <div key={recordFieldFid}>
                         <div className="form-group">
@@ -321,7 +426,8 @@ class DynamicContent extends Component {
                                     step='0.01' 
                                     placeholder='$0.00' 
                                     value={recordValue}
-                                    onChange={(e) => this.handleChange(e, recordFieldFid)}/>
+                                    onChange={(e) => this.handleChange(e, recordFieldFid)}
+                                    disabled={this.readOnly(recordReadOnly)}/>
                             </div>
                             {this.renderHelpText(recordFieldHelpText)}
                         </div>
@@ -334,7 +440,8 @@ class DynamicContent extends Component {
                         <Input 
                             type="textarea" 
                             onChange={(e) => this.handleChange(e, recordFieldFid)} 
-                            value={recordValue}/>
+                            value={recordValue}
+                            disabled={this.readOnly(recordReadOnly)}/>
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
                 );
@@ -345,7 +452,8 @@ class DynamicContent extends Component {
                         <Input 
                             type="text" 
                             onChange={(e) => this.handleChange(e, recordFieldFid)} 
-                            value={recordValue} />
+                            value={recordValue} 
+                            disabled={this.readOnly(recordReadOnly)}/>
                         {this.renderHelpText(recordFieldHelpText)}
                     </FormGroup>
                 );
@@ -368,7 +476,7 @@ class DynamicContent extends Component {
 
 
     render() {
-        const { userInterfaceFieldRecords } = this.state; 
+        const { userInterfaceFieldRecords, isSaving } = this.state; 
 
         //get all HTML elements
         var inputElements = userInterfaceFieldRecords.map(record=>this.renderInputElements(record)); 
@@ -378,99 +486,24 @@ class DynamicContent extends Component {
                 
                 { inputElements }
 
-                {/*dropdown*/}
-                <FormGroup>
-                    <Label for="exampleSelect">Select</Label>
-                    {/* popover for help text */}
-                    <span id="user-help-hover-1" className="user-help-hover" onClick={this.toggle}><i className="fa fa-question-circle" aria-hidden="true"></i></span>
-
-                    <Popover placement="bottom" isOpen={this.state.popoverOpen} target="user-help-hover-1" toggle={this.toggle}>
-                        <PopoverBody>Sed posuere consectetur est at lobortis. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</PopoverBody>
-                    </Popover>
-                    {/* popover for help text */}
-
-
-                    <Input type="select" name="select" id="exampleSelect" onChange={this.handleChange}>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </Input>
-                </FormGroup>
-
-                <FormGroup>
-                    <Label for="exampleDate">Date</Label>
-                    <Input type="date" name="date" id="exampleDate" placeholder="date placeholder" />
-                </FormGroup>
-
                 
-
-                <FormGroup>
-                    <Label for="exampleText">Text Area</Label>
-                    <Input type="textarea" id="exampleText" />
-                    <FormText>Example help text that remains unchanged.</FormText>
-                </FormGroup>
-
-                <FormGroup>
-                    <Label for="exampleText">Numeric</Label>
-                    <Input type="number" id="exampleText" step='0.01' placeholder='0.00' />
-                </FormGroup>
-
-                <div>
-                    <div className="form-group">
-                        <Label>Currency ($)</Label>
-                        <div className="input-group">
-                            <div className="input-group-prepend">
-                                <span className="input-group-text" id="basic-addon1">$</span>
-                            </div>
-                            <input className="form-control" type="number" step='0.01' placeholder='0.00' />
-                        </div>
-                    </div>
-                </div>
-
-                <FormGroup>
-                    <Label for="exampleText">Currency ($)</Label>
-                    <Input type="number" id="exampleText" step='0.01' placeholder='$0.00' />
-                    
-                    <FormText>Example help text that remains unchanged.</FormText>
-                </FormGroup>
-
-                
-                    
-
-                <FormGroup check>
-                    <Label check>
-                        <Input type="checkbox" />
-                        Check me out
-                    </Label>
-                </FormGroup>
-
-                
-
-                <p>This is some Custom Text that will be used to notifiy the user of something.  Doobydooby dooo</p>
 
                 {/*modal*/}
                 <div>
-                    <Button color="danger" onClick={this.toggleModal}>Modal</Button>
+                    {/* <Button color="danger" onClick={this.toggleModal}>Modal</Button> */}
                     <Modal isOpen={this.state.modal} toggle={this.toggleModal} className={this.props.className}>
-                        <ModalHeader toggle={this.toggleModal}>Modal title</ModalHeader>
+                        <ModalHeader toggle={this.toggleModal}>Data Saved!</ModalHeader>
                         <ModalBody>
-                            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                                    </ModalBody>
+                            Your updates saved successfully!  You can click the "Exit" button below to continue updating, or you can close this window now.
+                        </ModalBody>
                         <ModalFooter>
-                            <Button color="primary" onClick={this.toggleModal}>Do Something</Button>{' '}
-                            <Button color="secondary" onClick={this.toggleModal}>Cancel</Button>
+                            <Button color="primary" onClick={this.toggleModal}>Exit</Button>
                         </ModalFooter>
                     </Modal>
                 </div>
 
-                <div className="row justify-content-center">
-                    <div className="col-md-10">
-                        <div className="margin-top">
-                            <Button color="success" block onClick={this.handleSave}>Save Updates</Button>
-                        </div>
-                    </div>
+                <div className="margin-top">
+                    {this.renderSaveOrLoading(isSaving)}
                 </div>
             </div>                
         );

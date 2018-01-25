@@ -56,7 +56,8 @@ class Content extends Component {
                 fieldChoiceValues,
                 uiName,
                 uiTblDbid,
-                customText
+                customText,
+                readOnlyField
             } = config.tbl_uiFields.fids;
             
         
@@ -80,7 +81,7 @@ class Content extends Component {
         //get user interfaceFieldRecords (refer to specs)
         this.quickbase.api('API_DoQuery', {
             dbid: config.tbl_uiFields.dbid,
-            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}.${fieldChoiceValues}`,
+            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}.${fieldChoiceValues}.${readOnlyField}`,
             slist: fieldOrderNumber,
             query: `{'6'.EX.'${crid}'}`,
             fmt: 'structured',

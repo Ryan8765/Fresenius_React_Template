@@ -55,6 +55,42 @@ p {
     cursor: pointer;
 }
 
+#save-loading-icon{
+    text-align: center;
+    margin-top: 5px;
+}
+
+.saving-icon-text {
+    color: #3E5C72;
+    text-align: center;
+    font-size: .9rem;
+    font-weight: 500;
+}
+
+.save-loader {
+    width: 34px;
+    height: 34px;
+    margin: auto;
+    border: 5px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 5px solid #3E5C72;
+    -webkit-animation: spin 2s linear infinite; /* Safari */
+    animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+
 
 
 
