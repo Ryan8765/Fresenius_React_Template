@@ -46,7 +46,22 @@ class DynamicContent extends Component {
             userInterfaceFieldRecords: [],
             updateFields: [],
             isSaving: false,
+            //used to determine if a user has updated a record - reset at certain points
             userUpdatedRecord: false,
+            //handles modal content
+            modalContent: {
+                //should modal show error - or regular popup
+                isError: false,
+                header: "Data Saved!",
+                modalBody: 'Your updates saved successfully!  You can click the "Exit" button below to continue updating, or you can close this window now.',
+                error: { 
+                    code: null, 
+                    name: null, 
+                    action: null, 
+                    dbid: null
+                }
+
+            },
             testRecord: {
 
                 7: "Custom Text sadasfasfds",
@@ -63,22 +78,23 @@ class DynamicContent extends Component {
         };
 
         //bindings
-        this.toggle = this.toggle.bind(this);
         this.toggleModal = this.toggleModal.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.handleSave = this.handleSave.bind(this);
     }
 
 
-    toggle() {
-        this.setState({
-            popoverOpen: !this.state.popoverOpen
-        });
-    }
+    
 
     toggleModal() {
         this.setState({
             modal: !this.state.modal
+        });
+        this.setState({
+            modalContent: {
+                ...this.state.modalContent,
+                isError: false
+            }
         });
     }
 
@@ -101,6 +117,44 @@ class DynamicContent extends Component {
         this.setState({
             userInterfaceFieldRecords: records
         });
+    }
+
+
+    /**
+     * Handles all logic for QB errors and showing modal and updating state
+     * @param {Object} error - returned error object
+     * @param {String} dbid - DBID of the table queried for
+     */
+    showQbErrorModal(error, dbid) {
+
+        var code = error.code ? error.code : "Undefined";
+        var name = error.name ? error.name : "Undefined";
+        var action = error.action ? error.action : "Undefined";
+        var error = {
+            code,
+            name,
+            action,
+            dbid
+        };
+
+        this.setState({
+            modalContent: {
+                ...this.state.modalContent,
+                isError: true
+            }
+        }, () => {
+            this.setState({
+                modalContent: {
+                    ...this.state.modalContent,
+                    error
+                }
+            }, () => {
+                this.setState({
+                    modal: true
+                });
+            });
+        });
+
     }
 
 
@@ -153,7 +207,6 @@ class DynamicContent extends Component {
                 fields: fieldValues,
                 msInUTC: true
             }).then((results) => {
-                console.log(results);
 
                 //reset all "wasUpdated" values in state to disable save button
                 var resetRecords = userInterfaceFieldRecords.map((record)=>{
@@ -177,8 +230,7 @@ class DynamicContent extends Component {
                 this.toggleModal();
                 
             }).catch((error) => {
-                console.log(error);
-                alert(error);
+                this.showQbErrorModal(error, dbid);
             });
         }        
         
@@ -265,12 +317,20 @@ class DynamicContent extends Component {
      * @param {String} choiceValues - Value from UI interface fields "Field Choice Values" in QB. 
      */
     renderInputOptions( choiceValues ) {
+
+        var error = {
+            code: "N/A",
+            name: "Check Quick Base UI configuration to make sure options in all dropdown fields were provided.",
+            action: "N/A"
+        }
+
+        if (choiceValues.indexOf(';') < 0) {
+            alert('Check Quick Base UI configuration to make sure options in all dropdown fields were provided.');
+        };
+
         var choiceValues = choiceValues.split(";");
 
-        if( choiceValues.length < 1 ) {
-            alert('Check Quick Base configuration to make sure options in all dropdown fields were provided.')
-            return false;
-        };
+        
 
         var optionElements = choiceValues.map(function(choice, i){
             return <option key={i} value={choice}>{choice}</option>;
@@ -473,13 +533,76 @@ class DynamicContent extends Component {
     }//end renderInputElements
 
 
+    /**
+     * Handles rendering modal - handles errors and confirmations.
+     * @param {Object} modalContent - Object containing modal content details
+     */
+    renderModal( modalContent ) {
+        //renderModalget the necessary data off the modalState object
+        const { isError, header, modalBody, error } = this.state.modalContent;
+
+
+
+        if( isError ) {
+            var today = new Date();
+            var date = (today.getMonth() + 1)
+                + '-' + today.getDate()
+                + '-' + today.getFullYear();
+
+            var time = today.getHours() + ":" + today.getMinutes();
+            var dateTime = date + ' ' + time;
+            return (
+                <div>
+                    <Modal isOpen={this.state.modal} toggle={this.toggleModal}>
+                        <ModalHeader toggle={this.toggleModal}><span className="text-danger">Error</span></ModalHeader>
+                        <ModalBody>
+                            <div className="alert alert-danger">
+                                We are sorry, we have received the following error!
+                                <br />
+                                <br />
+                                DBID: {error.dbid} <br/>
+                                Record ID#: {this.props.rid} <br />
+                                Action: {error.action} <br />
+                                Error Code: {error.code} <br />
+                                Details: {error.name} <br />
+                                Date/Time: {dateTime} <br />
+                                <br />
+                                Please close or refresh this window and try again.  If the issue persists, please take a screen shot of this window and send to your system administrator at Charles.Giles@fmc-na.com.  Please include in the email, the project you were working on, which browser you are using, and any other pertinent details.  This will help us to debug and correct this error in a timely manner. Thank You!
+                            </div>
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button color="primary" onClick={this.toggleModal}>Exit</Button>
+                        </ModalFooter>
+                    </Modal>
+                </div>
+            );
+        } else {
+            return (
+                <div>
+                    <Modal isOpen={this.state.modal} toggle={this.toggleModal}>
+                        <ModalHeader toggle={this.toggleModal}>{header}</ModalHeader>
+                        <ModalBody>
+                            {modalBody}
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button color="primary" onClick={this.toggleModal}>Exit</Button>
+                        </ModalFooter>
+                    </Modal>
+                </div>
+            );
+        }
+
+    }//end rendermodal
+
+
 
 
     render() {
-        const { userInterfaceFieldRecords, isSaving } = this.state; 
+        const { userInterfaceFieldRecords, isSaving, modalContent } = this.state; 
 
         //get all HTML elements
-        var inputElements = userInterfaceFieldRecords.map(record=>this.renderInputElements(record)); 
+        var inputElements = userInterfaceFieldRecords.map(record=>this.renderInputElements(record));
+
         
         return (
             <div>
@@ -491,7 +614,7 @@ class DynamicContent extends Component {
                 {/*modal*/}
                 <div>
                     {/* <Button color="danger" onClick={this.toggleModal}>Modal</Button> */}
-                    <Modal isOpen={this.state.modal} toggle={this.toggleModal} className={this.props.className}>
+                    {/* <Modal isOpen={this.state.modal} toggle={this.toggleModal} className={this.props.className}>
                         <ModalHeader toggle={this.toggleModal}>Data Saved!</ModalHeader>
                         <ModalBody>
                             Your updates saved successfully!  You can click the "Exit" button below to continue updating, or you can close this window now.
@@ -499,8 +622,12 @@ class DynamicContent extends Component {
                         <ModalFooter>
                             <Button color="primary" onClick={this.toggleModal}>Exit</Button>
                         </ModalFooter>
-                    </Modal>
+                    </Modal> */}
                 </div>
+
+                {this.renderModal(modalContent)}
+
+
 
                 <div className="margin-top">
                     {this.renderSaveOrLoading(isSaving)}

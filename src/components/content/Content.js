@@ -1,4 +1,11 @@
 import React, { Component } from 'react';
+import {
+    Button,
+    Modal,
+    ModalHeader,
+    ModalBody,
+    ModalFooter
+} from 'reactstrap';
 
 //custom imports
 import './styles/styles.css';
@@ -26,10 +33,67 @@ class Content extends Component {
         });
         
         this.state = {
+            modal: false,
             //determines if page is loading (shows gif if so)
             pageLoading: true,
-            pageTitle: "Loading"
+            pageTitle: "Loading",
+            //handles modal content
+            modalContent: {
+                //should modal show error - or regular popup
+                isError: false,
+                header: "Data Saved!",
+                modalBody: 'Your updates saved successfully!  You can click the "Exit" button below to continue updating, or you can close this window now.',
+                error: {
+                    code: null,
+                    name: null,
+                    action: null,
+                    dbid: null
+                }
+
+            }
         };
+
+
+        this.toggleModal = this.toggleModal.bind(this);
+
+    }
+
+
+    /**
+     * Handles all logic for QB errors and showing modal and updating state
+     * @param {Object} error - returned error object
+     * @param {String} dbid - DBID of the table queried for
+     */
+    showQbErrorModal(error, dbid) {
+
+        var code = error.code ? error.code : "Undefined";
+        var name = error.name ? error.name : "Undefined";
+        var action = error.action ? error.action : "Undefined";
+        var error = {
+            code,
+            name,
+            action,
+            dbid
+        };
+
+        this.setState({
+            modalContent: {
+                ...this.state.modalContent,
+                isError: true
+            }
+        }, () => {
+            this.setState({
+                modalContent: {
+                    ...this.state.modalContent,
+                    error
+                }
+            }, () => {
+                this.setState({
+                    modal: true
+                });
+            });
+        });
+
     }
 
 
@@ -138,17 +202,33 @@ class Content extends Component {
                 });
                 
         
-            }).catch((err)=>{
-                alert('Error1111' + JSON.stringify(err));
+            }).catch((error)=>{
+                
+                //handles showing error details from QB API call and rendering modal
+                this.showQbErrorModal( error, tblDbid );
+                
             });
 
         }).catch((err) => {
-            console.log(err);
             
-            alert('Error22222' + JSON.stringify(err));
+            this.showQbErrorModal(err, config.tbl_uiFields.dbid);
             // object returned if there is an error: {"code":83,"name":"Invalid error code: 83","action":"API_DoQuery"}
         });
 
+    }
+
+
+
+    toggleModal() {
+        this.setState({
+            modal: !this.state.modal
+        });
+        this.setState({
+            modalContent: {
+                ...this.state.modalContent,
+                isError: false
+            }
+        });
     }
 
    
@@ -175,7 +255,68 @@ class Content extends Component {
         }
     }
 
+
+    /**
+     * Handles rendering modal - handles errors and confirmations.
+     * @param {Object} modalContent - Object containing modal content details
+     */
+    renderModal(modalContent) {
+        //renderModalget the necessary data off the modalState object
+        const { isError, header, modalBody, error } = this.state.modalContent;
+
+        if (isError) {
+            var today = new Date();
+            var date = (today.getMonth() + 1)
+                + '-' + today.getDate()
+                + '-' + today.getFullYear();
+
+            var time = today.getHours() + ":" + today.getMinutes();
+            var dateTime = date + ' ' + time;
+            return (
+                <div>
+                    <Modal isOpen={this.state.modal} toggle={this.toggleModal}>
+                        <ModalHeader toggle={this.toggleModal}><span className="text-danger">Error</span></ModalHeader>
+                        <ModalBody>
+                            <div className="alert alert-danger">
+                                We are sorry, we have received the following error!
+                                <br />
+                                <br />
+                                DBID: {error.dbid} <br />
+                                Record ID#: {this.props.rid} <br />
+                                Action: {error.action} <br />
+                                Error Code: {error.code} <br />
+                                Details: {error.name} <br />
+                                Date/Time: {dateTime} <br />
+                                <br />
+                                Please close or refresh this window and try again.  If the issue persists, please take a screen shot of this window and send to your system administrator at Charles.Giles@fmc-na.com.  Please include in the email, the project you were working on, which browser you are using, and any other pertinent details.  This will help us to debug and correct this error in a timely manner. Thank You!
+                            </div>
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button color="primary" onClick={this.toggleModal}>Exit</Button>
+                        </ModalFooter>
+                    </Modal>
+                </div>
+            );
+        } else {
+            return (
+                <div>
+                    <Modal isOpen={this.state.modal} toggle={this.toggleModal}>
+                        <ModalHeader toggle={this.toggleModal}>{header}</ModalHeader>
+                        <ModalBody>
+                            {modalBody}
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button color="primary" onClick={this.toggleModal}>Exit</Button>
+                        </ModalFooter>
+                    </Modal>
+                </div>
+            );
+        }
+
+    }//end rendermodal
+
     render() {
+        const {modalContent} = this.state;
         return (  
             <div id="main">
 
@@ -185,6 +326,8 @@ class Content extends Component {
                 {/* White Title */}
                 <DynamicTitle title={this.state.pageTitle} />
                 
+                {/* modal */}
+                {this.renderModal(modalContent)}
                 
                 <div className="row justify-content-center">
                     <div className="col-md-4">
