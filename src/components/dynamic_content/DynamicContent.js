@@ -323,6 +323,7 @@ class DynamicContent extends Component {
             name: "Check Quick Base UI configuration to make sure options in all dropdown fields were provided.",
             action: "N/A"
         }
+        
 
         if (choiceValues.indexOf(';') < 0) {
             alert('Check Quick Base UI configuration to make sure options in all dropdown fields were provided.');
