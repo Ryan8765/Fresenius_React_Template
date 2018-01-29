@@ -258,7 +258,7 @@ class DynamicContent extends Component {
     /**
      * This handles any change in input elements.  It updates the fields value to the value typed into the input element.
      * @param {Object} e - input change event 
-     * @param {Interger} fieldFid - the fid of the field in question that is being changed
+     * @param {Integer} fieldFid - the fid of the field in question that is being changed
      */
     handleChange(e, fieldFidInput) {
         

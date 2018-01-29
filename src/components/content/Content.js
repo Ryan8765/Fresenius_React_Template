@@ -121,7 +121,9 @@ class Content extends Component {
                 uiName,
                 uiTblDbid,
                 customText,
-                readOnlyField
+                readOnlyField,
+                inactive,
+                uiInactive
             } = config.tbl_uiFields.fids;
             
         
@@ -145,15 +147,15 @@ class Content extends Component {
         //get user interfaceFieldRecords (refer to specs)
         this.quickbase.api('API_DoQuery', {
             dbid: config.tbl_uiFields.dbid,
-            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}.${fieldChoiceValues}.${readOnlyField}`,
+            clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}.${fieldChoiceValues}.${readOnlyField}.${inactive}.${uiInactive}`,
             slist: fieldOrderNumber,
-            query: `{'6'.EX.'${crid}'}`,
+            query: `{'6'.EX.'${crid}'}AND{'${inactive}'.XEX.'1'}AND{'${uiInactive}'.XEX.'1'}`,
             fmt: 'structured',
         }).then((results) => {
             const records = results.table.records;
             
 
-            if (records.length < 1) return Promise.reject({ "code": 404, "name": "Check UI Fields configuration DBID bnda9x7py", "action": "API_DoQuery" });
+            if (records.length < 1) return Promise.reject({ "code": 404, "name": `Check UI Fields configuration DBID ${config.tbl_uiFields.dbid}.  No fields found.`, "action": "API_DoQuery" });
 
             //filter records for "Custom Header" and "Custom Text" field types as they don't contain fid's
             var clistRecords = getClistRecords(records, 9);
