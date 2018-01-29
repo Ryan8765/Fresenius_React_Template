@@ -123,7 +123,8 @@ class Content extends Component {
                 customText,
                 readOnlyField,
                 inactive,
-                uiInactive
+                uiInactive,
+                relatedUI
             } = config.tbl_uiFields.fids;
             
         
@@ -149,7 +150,7 @@ class Content extends Component {
             dbid: config.tbl_uiFields.dbid,
             clist: `${fieldName}.${fieldType}.${fieldFid}.${fieldTbleDbid}.${fieldLabel}.${fieldHelpText}.${keyFieldFid}.${uiName}.${uiTblDbid}.${customText}.${fieldChoiceValues}.${readOnlyField}.${inactive}.${uiInactive}`,
             slist: fieldOrderNumber,
-            query: `{'6'.EX.'${crid}'}AND{'${inactive}'.XEX.'1'}AND{'${uiInactive}'.XEX.'1'}`,
+            query: `{'${relatedUI}'.EX.'${crid}'}AND{'${inactive}'.XEX.'1'}AND{'${uiInactive}'.XEX.'1'}`,
             fmt: 'structured',
         }).then((results) => {
             const records = results.table.records;
